@@ -323,16 +323,23 @@ def run_backtest():
         loss_trades = int(len(orders[orders['profit'] <= 0]))
         win_rate = round(win_trades / total_trades * 100, 1) if total_trades > 0 else 0
 
+        def clean_value(val):
+            if isinstance(val, (float, np.floating)):
+                if np.isnan(val) or np.isinf(val):
+                    return 0.0
+                return float(val)
+            return val
+        
         orders_list = []
         for _, row in orders.iterrows():
             orders_list.append({
                 'symbol': str(row['symbol']),
                 'buy_date': int(row['buy_date']),
                 'sell_date': int(row['sell_date']) if row['sell_date'] else None,
-                'buy_price': round(float(row['buy_price']), 2),
-                'sell_price': round(float(row['sell_price']), 2) if row['sell_price'] else None,
-                'buy_cnt': float(row['buy_cnt']),
-                'profit': round(float(row['profit']), 2),
+                'buy_price': clean_value(round(float(row['buy_price']), 2)),
+                'sell_price': clean_value(round(float(row['sell_price']), 2)) if row['sell_price'] else None,
+                'buy_cnt': clean_value(float(row['buy_cnt'])),
+                'profit': clean_value(round(float(row['profit']), 2)),
                 'buy_factor': str(row['buy_factor']),
                 'sell_type': str(row.get('sell_type', ''))
             })
@@ -342,6 +349,13 @@ def run_backtest():
         chart_path = os.path.join(CHARTS_DIR, chart_filename)
         _generate_chart(result, kl_mgr, symbols, chart_path)
 
+        def clean_value(val):
+            if isinstance(val, (float, np.floating)):
+                if np.isnan(val) or np.isinf(val):
+                    return 0.0
+                return float(val)
+            return val
+        
         per_stock = {}
         for sym in orders['symbol'].unique():
             sym_orders = orders[orders['symbol'] == sym]
@@ -349,22 +363,30 @@ def run_backtest():
             sym_win = int(len(sym_orders[sym_orders['profit'] > 0]))
             per_stock[str(sym)] = {
                 'trades': int(len(sym_orders)),
-                'profit': round(sym_profit, 2),
+                'profit': clean_value(round(sym_profit, 2)),
                 'win_trades': sym_win,
-                'win_rate': round(sym_win / len(sym_orders) * 100, 1) if len(sym_orders) > 0 else 0
+                'win_rate': clean_value(round(sym_win / len(sym_orders) * 100, 1) if len(sym_orders) > 0 else 0)
             }
 
+        # Handle NaN values before JSON serialization
+        def clean_value(val):
+            if isinstance(val, (float, np.floating)):
+                if np.isnan(val) or np.isinf(val):
+                    return 0.0
+                return float(val)
+            return val
+        
         return jsonify({
             'success': True,
             'summary': {
                 'total_trades': total_trades,
-                'total_profit': round(total_profit, 2),
-                'win_rate': win_rate,
+                'total_profit': clean_value(round(total_profit, 2)),
+                'win_rate': clean_value(win_rate),
                 'win_trades': win_trades,
                 'loss_trades': loss_trades,
                 'initial_cash': read_cash,
-                'final_cash': round(read_cash + total_profit, 2),
-                'return_pct': round(total_profit / read_cash * 100, 2)
+                'final_cash': clean_value(round(read_cash + total_profit, 2)),
+                'return_pct': clean_value(round(total_profit / read_cash * 100, 2))
             },
             'per_stock': per_stock,
             'orders': orders_list,
