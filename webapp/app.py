@@ -176,8 +176,8 @@ def _register_factors():
         'quick_profit': {
             'class': AbuFactorSellQuickProfit, 'name': '★高胜率快速止盈',
             'params': [
-                {'key': 'profit_target_pct', 'label': '止盈目标%', 'type': 'float', 'default': 0.005},
-                {'key': 'max_hold_days', 'label': '最大持有天数', 'type': 'int', 'default': 15},
+                {'key': 'profit_target_pct', 'label': '止盈目标%', 'type': 'float', 'default': 0.008},
+                {'key': 'max_hold_days', 'label': '最大持有天数', 'type': 'int', 'default': 20},
                 {'key': 'stop_loss_pct', 'label': '止损线%', 'type': 'float', 'default': -0.15}
             ]
         }
