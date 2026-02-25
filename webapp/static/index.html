@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABU量化交易系统</title>
+<style>
+:root {
+  --primary: #1a73e8;
+  --primary-dark: #1557b0;
+  --success: #0d904f;
+  --danger: #d93025;
+  --warn: #f9ab00;
+  --bg: #f8f9fa;
+  --card: #ffffff;
+  --border: #e0e0e0;
+  --text: #202124;
+  --text-sec: #5f6368;
+  --shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+  --radius: 8px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:var(--bg); color:var(--text); }
+.header { background:var(--primary); color:#fff; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; box-shadow:var(--shadow); position:sticky; top:0; z-index:100; }
+.header h1 { font-size:20px; font-weight:600; }
+.header .ver { font-size:12px; opacity:.8; }
+.container { max-width:1400px; margin:0 auto; padding:16px; }
+.grid { display:grid; grid-template-columns:380px 1fr; gap:16px; }
+@media(max-width:900px) { .grid { grid-template-columns:1fr; } }
+.card { background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
+.card-header { background:#f1f3f4; padding:10px 16px; font-weight:600; font-size:14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.card-body { padding:16px; }
+.tabs { display:flex; border-bottom:2px solid var(--border); }
+.tab { padding:8px 16px; cursor:pointer; font-size:13px; font-weight:500; color:var(--text-sec); border-bottom:2px solid transparent; margin-bottom:-2px; transition:.2s; }
+.tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+label { display:block; font-size:12px; font-weight:500; color:var(--text-sec); margin-bottom:4px; margin-top:10px; }
+label:first-child { margin-top:0; }
+input, select { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:4px; font-size:13px; outline:none; transition:.2s; }
+input:focus, select:focus { border-color:var(--primary); box-shadow:0 0 0 2px rgba(26,115,232,.15); }
+.btn { display:inline-flex; align-items:center; justify-content:center; padding:8px 20px; border:none; border-radius:4px; font-size:13px; font-weight:500; cursor:pointer; transition:.2s; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:var(--primary-dark); }
+.btn-sm { padding:4px 10px; font-size:12px; }
+.btn-outline { background:transparent; border:1px solid var(--border); color:var(--text); }
+.btn-outline:hover { background:#f1f3f4; }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-danger:hover { background:#c5221f; }
+.btn-success { background:var(--success); color:#fff; }
+.factor-item { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; margin:4px 0; background:#f8f9fa; border-radius:4px; font-size:12px; }
+.factor-item .remove { cursor:pointer; color:var(--danger); font-weight:700; padding:0 4px; }
+.metrics { display:grid; grid-template-columns:repeat(auto-fit, minmax(120px,1fr)); gap:8px; margin-bottom:16px; }
+.metric-card { background:#f8f9fa; border-radius:6px; padding:12px; text-align:center; }
+.metric-card .value { font-size:20px; font-weight:700; color:var(--primary); }
+.metric-card .label { font-size:11px; color:var(--text-sec); margin-top:2px; }
+.metric-card.profit .value { color:var(--success); }
+.metric-card.loss .value { color:var(--danger); }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { background:#f1f3f4; padding:8px 10px; text-align:left; font-weight:600; white-space:nowrap; }
+td { padding:6px 10px; border-bottom:1px solid #f1f3f4; }
+tr:hover td { background:#f8f9fa; }
+.profit-pos { color:var(--success); font-weight:600; }
+.profit-neg { color:var(--danger); font-weight:600; }
+.stock-chips { display:flex; flex-wrap:wrap; gap:4px; margin:8px 0; }
+.chip { display:inline-flex; align-items:center; padding:2px 8px; background:#e8f0fe; color:var(--primary); border-radius:12px; font-size:11px; font-weight:500; }
+.chip .x { margin-left:4px; cursor:pointer; font-weight:700; opacity:.6; }
+.chip .x:hover { opacity:1; }
+.loading { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.3); z-index:999; align-items:center; justify-content:center; }
+.loading.show { display:flex; }
+.spinner { width:48px; height:48px; border:4px solid #fff; border-top-color:var(--primary); border-radius:50%; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.chart-img { width:100%; border-radius:4px; margin-top:8px; }
+.empty-state { text-align:center; padding:40px; color:var(--text-sec); }
+.empty-state .icon { font-size:48px; margin-bottom:8px; }
+.row { display:flex; gap:8px; }
+.row > * { flex:1; }
+.section-title { font-size:13px; font-weight:600; margin:12px 0 6px; padding-bottom:4px; border-bottom:1px solid var(--border); }
+.section-title:first-child { margin-top:0; }
+.factor-select-row { display:flex; gap:6px; margin-top:8px; }
+.factor-select-row select { flex:1; }
+.per-stock { margin-top:12px; }
+.per-stock-item { display:flex; justify-content:space-between; align-items:center; padding:6px 10px; margin:2px 0; background:#f8f9fa; border-radius:4px; font-size:12px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>ABU 量化交易系统</h1>
+    <div class="ver" id="sys-version">v0.4.0</div>
+  </div>
+  <div style="font-size:12px;opacity:.8;">A股策略优化版</div>
+</div>
+
+<div class="container">
+<div class="grid">
+
+<!-- Left Panel: Configuration -->
+<div>
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">基本设置</div>
+    <div class="card-body">
+      <label>初始资金 (元)</label>
+      <input type="number" id="read-cash" value="1000000" min="10000" step="10000">
+      <label>回测年数</label>
+      <input type="number" id="n-folds" value="2" min="1" max="10">
+      <label>股票池</label>
+      <div class="row">
+        <input type="text" id="symbol-input" placeholder="输入代码如 usTSLA">
+        <button class="btn btn-outline btn-sm" onclick="addSymbol()">添加</button>
+      </div>
+      <div class="stock-chips" id="symbol-chips"></div>
+      <div style="margin-top:6px;">
+        <button class="btn btn-outline btn-sm" onclick="loadPreset('us')">美股示例</button>
+        <button class="btn btn-outline btn-sm" onclick="loadPreset('cn')">A股示例</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header">策略配置</div>
+    <div class="card-body">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab(this,'buy-tab')">买入策略</div>
+        <div class="tab" onclick="switchTab(this,'sell-tab')">卖出策略</div>
+      </div>
+
+      <div id="buy-tab" class="tab-content active">
+        <div class="factor-select-row">
+          <select id="buy-factor-select"></select>
+          <button class="btn btn-outline btn-sm" onclick="addBuyFactor()">添加</button>
+        </div>
+        <div id="buy-factor-params"></div>
+        <div class="section-title" style="margin-top:12px;">已选买入策略</div>
+        <div id="buy-factor-list"></div>
+      </div>
+
+      <div id="sell-tab" class="tab-content">
+        <div class="factor-select-row">
+          <select id="sell-factor-select"></select>
+          <button class="btn btn-outline btn-sm" onclick="addSellFactor()">添加</button>
+        </div>
+        <div id="sell-factor-params"></div>
+        <div class="section-title" style="margin-top:12px;">已选卖出策略</div>
+        <div id="sell-factor-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="runBacktest()">
+    开始回测
+  </button>
+</div>
+
+<!-- Right Panel: Results -->
+<div>
+  <div class="card" id="results-card">
+    <div class="card-header">
+      <span>回测结果</span>
+      <span id="result-time" style="font-size:11px;font-weight:400;color:var(--text-sec);"></span>
+    </div>
+    <div class="card-body">
+      <div id="results-empty" class="empty-state">
+        <div class="icon">📊</div>
+        <p>配置策略后点击"开始回测"查看结果</p>
+      </div>
+      <div id="results-content" style="display:none;">
+        <div class="metrics" id="metrics-grid"></div>
+        <div id="chart-container"></div>
+        <div id="per-stock-container"></div>
+        <div class="section-title" style="margin-top:16px;">交易明细</div>
+        <div style="overflow-x:auto;">
+          <table id="orders-table">
+            <thead>
+              <tr>
+                <th>股票</th><th>买入日期</th><th>卖出日期</th>
+                <th>买入价</th><th>卖出价</th><th>数量</th>
+                <th>盈亏</th><th>买入策略</th>
+              </tr>
+            </thead>
+            <tbody id="orders-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<div class="loading" id="loading">
+  <div style="text-align:center;">
+    <div class="spinner"></div>
+    <div style="color:#fff;margin-top:12px;font-size:14px;">回测运行中...</div>
+  </div>
+</div>
+
+<script>
+let buyFactorsInfo = [];
+let sellFactorsInfo = [];
+let selectedSymbols = ['usTSLA'];
+let selectedBuyFactors = [];
+let selectedSellFactors = [];
+
+async function init() {
+  try {
+    const [factorsRes, infoRes] = await Promise.all([
+      fetch('/api/factors').then(r => r.json()),
+      fetch('/api/market/info').then(r => r.json())
+    ]);
+    buyFactorsInfo = factorsRes.buy_factors;
+    sellFactorsInfo = factorsRes.sell_factors;
+    document.getElementById('sys-version').textContent = 'v' + infoRes.version;
+    populateFactorSelects();
+    renderSymbols();
+
+    selectedBuyFactors.push({
+      id: 'break', name: 'N日突破买入',
+      params: { xd: 20 }
+    });
+    selectedSellFactors.push({
+      id: 'atr_stop', name: 'ATR止盈止损',
+      params: { stop_loss_n: 1.0, stop_win_n: 3.0 }
+    });
+    renderFactorLists();
+  } catch(e) {
+    console.error('Init error:', e);
+  }
+}
+
+function populateFactorSelects() {
+  const buySelect = document.getElementById('buy-factor-select');
+  buySelect.innerHTML = buyFactorsInfo.map(f =>
+    '<option value="'+f.id+'">'+f.name+'</option>').join('');
+  buySelect.onchange = () => showFactorParams('buy');
+  showFactorParams('buy');
+
+  const sellSelect = document.getElementById('sell-factor-select');
+  sellSelect.innerHTML = sellFactorsInfo.map(f =>
+    '<option value="'+f.id+'">'+f.name+'</option>').join('');
+  sellSelect.onchange = () => showFactorParams('sell');
+  showFactorParams('sell');
+}
+
+function showFactorParams(type) {
+  const select = document.getElementById(type+'-factor-select');
+  const container = document.getElementById(type+'-factor-params');
+  const fid = select.value;
+  const infos = type === 'buy' ? buyFactorsInfo : sellFactorsInfo;
+  const info = infos.find(f => f.id === fid);
+  if (!info) { container.innerHTML = ''; return; }
+  container.innerHTML = info.params.map(p =>
+    '<label>'+p.label+'</label>' +
+    '<input type="'+(p.type==='bool'?'checkbox':'number')+'" ' +
+    'id="param-'+type+'-'+p.key+'" ' +
+    (p.type==='bool' ? (p.default?'checked':'') : 'value="'+p.default+'"') +
+    (p.type==='float'?' step="0.1"':'') + '>'
+  ).join('');
+}
+
+function addBuyFactor() {
+  const select = document.getElementById('buy-factor-select');
+  const fid = select.value;
+  const info = buyFactorsInfo.find(f => f.id === fid);
+  if (!info) return;
+  const params = {};
+  info.params.forEach(p => {
+    const el = document.getElementById('param-buy-'+p.key);
+    if (p.type === 'bool') params[p.key] = el.checked;
+    else if (p.type === 'int') params[p.key] = parseInt(el.value);
+    else params[p.key] = parseFloat(el.value);
+  });
+  selectedBuyFactors.push({ id: fid, name: info.name, params });
+  renderFactorLists();
+}
+
+function addSellFactor() {
+  const select = document.getElementById('sell-factor-select');
+  const fid = select.value;
+  const info = sellFactorsInfo.find(f => f.id === fid);
+  if (!info) return;
+  const params = {};
+  info.params.forEach(p => {
+    const el = document.getElementById('param-sell-'+p.key);
+    if (p.type === 'bool') params[p.key] = el.checked;
+    else if (p.type === 'int') params[p.key] = parseInt(el.value);
+    else params[p.key] = parseFloat(el.value);
+  });
+  selectedSellFactors.push({ id: fid, name: info.name, params });
+  renderFactorLists();
+}
+
+function renderFactorLists() {
+  const buyList = document.getElementById('buy-factor-list');
+  buyList.innerHTML = selectedBuyFactors.length === 0
+    ? '<div style="color:var(--text-sec);font-size:12px;padding:8px;">暂无</div>'
+    : selectedBuyFactors.map((f, i) => {
+        const pstr = Object.entries(f.params).map(([k,v])=>k+'='+v).join(', ');
+        return '<div class="factor-item"><span>'+f.name+' ('+pstr+')</span>' +
+               '<span class="remove" onclick="removeBuyFactor('+i+')">×</span></div>';
+      }).join('');
+
+  const sellList = document.getElementById('sell-factor-list');
+  sellList.innerHTML = selectedSellFactors.length === 0
+    ? '<div style="color:var(--text-sec);font-size:12px;padding:8px;">暂无</div>'
+    : selectedSellFactors.map((f, i) => {
+        const pstr = Object.entries(f.params).map(([k,v])=>k+'='+v).join(', ');
+        return '<div class="factor-item"><span>'+f.name+' ('+pstr+')</span>' +
+               '<span class="remove" onclick="removeSellFactor('+i+')">×</span></div>';
+      }).join('');
+}
+
+function removeBuyFactor(i) { selectedBuyFactors.splice(i,1); renderFactorLists(); }
+function removeSellFactor(i) { selectedSellFactors.splice(i,1); renderFactorLists(); }
+
+function addSymbol() {
+  const input = document.getElementById('symbol-input');
+  const sym = input.value.trim();
+  if (sym && !selectedSymbols.includes(sym)) {
+    selectedSymbols.push(sym);
+    renderSymbols();
+    input.value = '';
+  }
+}
+
+function removeSymbol(sym) {
+  selectedSymbols = selectedSymbols.filter(s => s !== sym);
+  renderSymbols();
+}
+
+function renderSymbols() {
+  document.getElementById('symbol-chips').innerHTML = selectedSymbols.map(s =>
+    '<span class="chip">'+s+'<span class="x" onclick="removeSymbol(\''+s+'\')">×</span></span>'
+  ).join('');
+}
+
+function loadPreset(market) {
+  if (market === 'us') {
+    selectedSymbols = ['usTSLA','usAAPL','usGOOG','usBIDU','usNOAH','usSFUN'];
+  } else {
+    selectedSymbols = ['usTSLA','usNOAH','usSFUN','usBIDU','usWUBA','usVIPS'];
+  }
+  renderSymbols();
+}
+
+function switchTab(el, tabId) {
+  el.parentElement.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  el.closest('.card-body').querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+}
+
+async function runBacktest() {
+  if (selectedBuyFactors.length === 0) {
+    alert('请至少添加一个买入策略');
+    return;
+  }
+  if (selectedSymbols.length === 0) {
+    alert('请至少添加一个股票');
+    return;
+  }
+
+  document.getElementById('loading').classList.add('show');
+
+  try {
+    const config = {
+      read_cash: parseInt(document.getElementById('read-cash').value),
+      n_folds: parseInt(document.getElementById('n-folds').value),
+      symbols: selectedSymbols,
+      buy_factors: selectedBuyFactors.map(f => ({ id: f.id, params: f.params })),
+      sell_factors: selectedSellFactors.map(f => ({ id: f.id, params: f.params }))
+    };
+
+    const res = await fetch('/api/backtest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+    const data = await res.json();
+
+    if (data.error) {
+      alert('回测错误: ' + data.error);
+      return;
+    }
+
+    displayResults(data);
+  } catch(e) {
+    alert('请求失败: ' + e.message);
+  } finally {
+    document.getElementById('loading').classList.remove('show');
+  }
+}
+
+function displayResults(data) {
+  document.getElementById('results-empty').style.display = 'none';
+  document.getElementById('results-content').style.display = 'block';
+  document.getElementById('result-time').textContent = new Date().toLocaleString('zh-CN');
+
+  const s = data.summary;
+  const profitClass = s.total_profit >= 0 ? 'profit' : 'loss';
+  document.getElementById('metrics-grid').innerHTML = `
+    <div class="metric-card">
+      <div class="value">${s.total_trades}</div><div class="label">总交易数</div>
+    </div>
+    <div class="metric-card ${profitClass}">
+      <div class="value">${s.total_profit >= 0 ? '+' : ''}${s.total_profit.toLocaleString()}</div>
+      <div class="label">总盈亏</div>
+    </div>
+    <div class="metric-card">
+      <div class="value">${s.win_rate}%</div><div class="label">胜率</div>
+    </div>
+    <div class="metric-card profit">
+      <div class="value">${s.win_trades}</div><div class="label">盈利笔数</div>
+    </div>
+    <div class="metric-card loss">
+      <div class="value">${s.loss_trades}</div><div class="label">亏损笔数</div>
+    </div>
+    <div class="metric-card ${profitClass}">
+      <div class="value">${(s.return_pct||0) >= 0 ? '+' : ''}${s.return_pct||0}%</div>
+      <div class="label">收益率</div>
+    </div>
+  `;
+
+  const chartContainer = document.getElementById('chart-container');
+  if (data.chart_url) {
+    chartContainer.innerHTML = '<img class="chart-img" src="'+data.chart_url+'?t='+Date.now()+'" alt="回测图表">';
+  } else {
+    chartContainer.innerHTML = '';
+  }
+
+  const psContainer = document.getElementById('per-stock-container');
+  if (data.per_stock && Object.keys(data.per_stock).length > 0) {
+    let html = '<div class="section-title">个股表现</div><div class="per-stock">';
+    for (const [sym, info] of Object.entries(data.per_stock)) {
+      const cls = info.profit >= 0 ? 'profit-pos' : 'profit-neg';
+      html += '<div class="per-stock-item">' +
+        '<span><strong>'+sym+'</strong> · '+info.trades+'笔 · 胜率'+info.win_rate+'%</span>' +
+        '<span class="'+cls+'">'+(info.profit>=0?'+':'')+info.profit.toLocaleString()+'</span>' +
+        '</div>';
+    }
+    html += '</div>';
+    psContainer.innerHTML = html;
+  } else {
+    psContainer.innerHTML = '';
+  }
+
+  const tbody = document.getElementById('orders-body');
+  if (data.orders.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-sec);">无交易记录</td></tr>';
+  } else {
+    tbody.innerHTML = data.orders.map(o => {
+      const cls = o.profit >= 0 ? 'profit-pos' : 'profit-neg';
+      return '<tr>' +
+        '<td>'+o.symbol+'</td>' +
+        '<td>'+o.buy_date+'</td>' +
+        '<td>'+(o.sell_date||'-')+'</td>' +
+        '<td>'+o.buy_price+'</td>' +
+        '<td>'+(o.sell_price||'-')+'</td>' +
+        '<td>'+Math.round(o.buy_cnt)+'</td>' +
+        '<td class="'+cls+'">'+(o.profit>=0?'+':'')+o.profit.toLocaleString()+'</td>' +
+        '<td style="font-size:11px;">'+o.buy_factor+'</td>' +
+        '</tr>';
+    }).join('');
+  }
+}
+
+document.getElementById('symbol-input').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') addSymbol();
+});
+
+init();
+</script>
+</body>
+</html>
