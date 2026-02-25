@@ -36,9 +36,13 @@ class AbuFactorSellT1StopCN(AbuFactorSellBase):
     def support_direction(self):
         return [ESupportDirection.DIRECTION_CAll.value]
 
+    def _is_t1_ok(self, today, order):
+        """T+1: buy_date当天不能卖，至少要到下一个交易日"""
+        return int(today.date) > int(order.buy_date)
+
     def fit_day(self, today, orders):
         for order in orders:
-            if not hasattr(order, 'keep_days') or order.keep_days < 1:
+            if not self._is_t1_ok(today, order):
                 continue
 
             profit = (today.close - order.buy_price) * order.expect_direction
@@ -78,7 +82,7 @@ class AbuFactorSellPriceLimitCN(AbuFactorSellBase):
 
     def fit_day(self, today, orders):
         for order in orders:
-            if not hasattr(order, 'keep_days') or order.keep_days < 1:
+            if int(today.date) <= int(order.buy_date):
                 continue
 
             oid = id(order)
@@ -129,6 +133,6 @@ class AbuFactorSellMACrossCN(AbuFactorSellBase):
 
         if ma_s_yest >= ma_l_yest and ma_s_today < ma_l_today:
             for order in orders:
-                if not hasattr(order, 'keep_days') or order.keep_days < 1:
+                if int(today.date) <= int(order.buy_date):
                     continue
                 self.sell_tomorrow(order)
