@@ -27,9 +27,15 @@ The codebase requires specific older versions of core libraries. Using newer ver
 
 ### Running the Application
 
-There is no standalone server. The system runs via Python scripts or Jupyter notebooks.
+**Web UI** (recommended):
+```
+source /workspace/.venv/bin/activate
+python webapp/app.py
+# Access at http://localhost:5000
+```
+Or use the one-click script: `./run.sh`
 
-**Sandbox/example mode** (uses bundled CSV data, no network required):
+**Python/Jupyter mode** (sandbox data, no network required):
 ```python
 import matplotlib; matplotlib.use('Agg')
 from abupy import env
@@ -40,9 +46,15 @@ env.enable_example_env_ipython()
 
 **No automated test suite** exists in this project. The "test" per the README is `import abupy`.
 
+### A-Stock Strategy Modules
+
+- `abupy/FactorBuyBu/ABuFactorBuyCN.py` — A-stock buy factors (量价齐升、均线多头、MACD金叉)
+- `abupy/FactorSellBu/ABuFactorSellCN.py` — A-stock sell factors (T+1止损、涨跌停自适应、均线死叉)
+
 ### Key Gotchas
 
 - When running headless (no display), set `matplotlib.use('Agg')` **before** any other matplotlib/abupy imports.
-- The project has no `setup.py`, `requirements.txt`, or formal dependency management.
+- `requirements.txt` and `setup.py` are now provided for dependency management.
 - Tutorial notebooks are in `abupy_lecture/`, UI widgets in `abupy_ui/`, book examples in `ipython/` and `python/`.
 - The bundled test data is in `abupy/RomDataBu/csv.zip` and is auto-extracted on first `enable_example_env_ipython()` call.
+- The Web UI backend is in `webapp/app.py`, frontend in `webapp/static/index.html`.
