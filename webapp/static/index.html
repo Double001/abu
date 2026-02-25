@@ -148,6 +148,9 @@ tr:hover td { background:#f8f9fa; }
     </div>
   </div>
 
+  <button class="btn btn-success" style="width:100%;padding:10px;margin-bottom:8px;" onclick="loadHighWRPreset()">
+    ★ 一键加载高胜率策略 (90%+)
+  </button>
   <button class="btn btn-primary" style="width:100%;padding:12px;" onclick="runBacktest()">
     开始回测
   </button>
@@ -464,6 +467,22 @@ function displayResults(data) {
         '</tr>';
     }).join('');
   }
+}
+
+function loadHighWRPreset() {
+  selectedSymbols = ['usTSLA','usNOAH','usSFUN','usBIDU','usAAPL','usGOOG','usWUBA','usVIPS'];
+  renderSymbols();
+  document.getElementById('read-cash').value = '5000000';
+  document.getElementById('n-folds').value = '2';
+  selectedBuyFactors = [{
+    id: 'pullback_trend', name: '★高胜率趋势回调买入',
+    params: { pullback_days: 3, vol_shrink: true, use_rsi: false, max_pullback_pct: 0.06 }
+  }];
+  selectedSellFactors = [{
+    id: 'quick_profit', name: '★高胜率快速止盈',
+    params: { profit_target_pct: 0.005, max_hold_days: 15, stop_loss_pct: -0.15 }
+  }];
+  renderFactorLists();
 }
 
 document.getElementById('symbol-input').addEventListener('keypress', function(e) {

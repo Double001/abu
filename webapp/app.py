@@ -56,6 +56,8 @@ def _register_factors():
     from abupy.FactorSellBu.ABuFactorSellCN import (
         AbuFactorSellT1StopCN, AbuFactorSellPriceLimitCN,
         AbuFactorSellMACrossCN)
+    from abupy.FactorBuyBu.ABuFactorBuyHighWR import AbuFactorBuyPullbackTrend
+    from abupy.FactorSellBu.ABuFactorSellHighWR import AbuFactorSellQuickProfit
 
     global BUY_FACTORS_REGISTRY, SELL_FACTORS_REGISTRY
     BUY_FACTORS_REGISTRY = {
@@ -103,6 +105,15 @@ def _register_factors():
                 {'key': 'fast_period', 'label': '快线周期', 'type': 'int', 'default': 12},
                 {'key': 'slow_period', 'label': '慢线周期', 'type': 'int', 'default': 26},
                 {'key': 'signal_period', 'label': '信号线周期', 'type': 'int', 'default': 9}
+            ]
+        },
+        'pullback_trend': {
+            'class': AbuFactorBuyPullbackTrend, 'name': '★高胜率趋势回调买入',
+            'params': [
+                {'key': 'pullback_days', 'label': '回调天数', 'type': 'int', 'default': 3},
+                {'key': 'vol_shrink', 'label': '缩量过滤', 'type': 'bool', 'default': True},
+                {'key': 'use_rsi', 'label': 'RSI过滤', 'type': 'bool', 'default': False},
+                {'key': 'max_pullback_pct', 'label': '最大回调幅度', 'type': 'float', 'default': 0.06}
             ]
         }
     }
@@ -160,6 +171,14 @@ def _register_factors():
             'params': [
                 {'key': 'ma_short', 'label': '短期均线', 'type': 'int', 'default': 5},
                 {'key': 'ma_long', 'label': '长期均线', 'type': 'int', 'default': 20}
+            ]
+        },
+        'quick_profit': {
+            'class': AbuFactorSellQuickProfit, 'name': '★高胜率快速止盈',
+            'params': [
+                {'key': 'profit_target_pct', 'label': '止盈目标%', 'type': 'float', 'default': 0.005},
+                {'key': 'max_hold_days', 'label': '最大持有天数', 'type': 'int', 'default': 15},
+                {'key': 'stop_loss_pct', 'label': '止损线%', 'type': 'float', 'default': -0.15}
             ]
         }
     }
