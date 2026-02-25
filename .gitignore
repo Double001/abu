@@ -6,4 +6,8 @@ p.sh
 *.pyc
 tmp
 test.py
-/abupy/RomDataBu/df_kl.h5
+/abupy/RomDataBu/df_kl.h5.venv/
+__pycache__/
+*.pyc
+data_2024_2025/
+webapp/static/charts/
