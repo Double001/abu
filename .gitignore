@@ -11,3 +11,4 @@ __pycache__/
 *.pyc
 data_2024_2025/
 webapp/static/charts/
+.venv/
