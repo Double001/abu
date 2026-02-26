@@ -486,6 +486,69 @@ def market_info():
     })
 
 
+@app.route('/api/sentiment/scan', methods=['GET'])
+def sentiment_scan():
+    """龙虎榜+社媒情绪实时扫描"""
+    try:
+        from .sentiment import scan_with_sentiment, get_collector
+    except ImportError:
+        from sentiment import scan_with_sentiment, get_collector
+
+    import requests as req
+
+    # 获取涨幅榜
+    hot_url = ("https://push2.eastmoney.com/api/qt/clist/get?"
+               "pn=1&pz=100&po=1&np=1&fltt=2&invt=2"
+               "&fid=f3&fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23"
+               "&fields=f2,f3,f4,f5,f6,f7,f8,f9,f10,f12,f14,f15,f16,f17,f18,f20,f21")
+    hot_resp = req.get(hot_url, timeout=15,
+                       headers={'User-Agent': 'Mozilla/5.0'})
+    if hot_resp.status_code != 200:
+        return jsonify({'error': '涨幅榜获取失败'}), 500
+
+    hot_data = hot_resp.json()
+    stocks = hot_data.get('data', {}).get('diff', [])
+
+    # 获取上证5日涨幅
+    bench_url = ("https://push2his.eastmoney.com/api/qt/stock/kline/get?"
+                 "secid=1.000001&fields1=f1,f2,f3,f4,f5,f6"
+                 "&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61"
+                 "&klt=101&fqt=1&beg=20260101&end=20260301")
+    try:
+        br = req.get(bench_url, timeout=10,
+                     headers={'User-Agent': 'Mozilla/5.0'})
+        bk = br.json().get('data', {}).get('klines', [])
+        bc = [float(k.split(',')[2]) for k in bk]
+        bench_5d = (bc[-1] - bc[-6]) / bc[-6] * 100 if len(bc) >= 6 else 0
+    except Exception:
+        bench_5d = 0
+
+    # 社媒情绪评分
+    results = scan_with_sentiment(stocks)
+
+    # V6条件检查
+    bench_ok = bench_5d >= 2.0
+    heat = sum(1 for s in stocks if s.get('f3', 0) >= 5.0)
+
+    return jsonify({
+        'scan_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'bench_5d_pct': round(bench_5d, 2),
+        'bench_ok': bench_ok,
+        'market_heat': heat,
+        'heat_ok': heat >= 5,
+        'candidates': [{
+            'code': r['code'], 'name': r['name'],
+            'pchg': r['pchg'],
+            'social_score': r['social_score'],
+            'social_details': r['social_details'],
+            'vol_ratio': r['vol_ratio'],
+            'turnover': r['turnover'],
+            'amplitude': r['amplitude']
+        } for r in results[:20]],
+        'total_candidates': len(results)
+    })
+
+
 if __name__ == '__main__':
     print('='*50)
     print('  ABU量化交易系统 Web服务')
